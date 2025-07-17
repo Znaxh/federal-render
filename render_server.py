@@ -312,40 +312,51 @@ def main():
     # Get port from environment (Render sets this)
     port = int(os.environ.get("PORT", 8080))
     host = "0.0.0.0"
-    
+
     logger.info(f"🚀 Starting Federated Learning Server on Render")
     logger.info(f"Host: {host}, Port: {port}")
-    
+
     # Create strategy
     strategy = create_strategy()
-    
-    # Create and start web interface in background
+
+    # Create web interface
     web_app = create_web_interface(strategy, port)
-    web_thread = threading.Thread(
-        target=lambda: web_app.run(host=host, port=port+1, debug=False),
-        daemon=True
-    )
-    web_thread.start()
-    logger.info(f"Web interface started on port {port+1}")
-    
-    # Configure and start FL server
+
+    # Configure FL server
     config = fl.server.ServerConfig(num_rounds=10)
-    
-    logger.info("Starting Flower server...")
-    logger.info("🌐 Web dashboard will be available at your Render URL")
-    logger.info("🔗 Clients can connect using your Render URL:8080")
-    
+
+    logger.info("🌐 Web dashboard available at your Render URL")
+    logger.info(f"🔗 Clients should connect to your-render-url.com:{port}")
+
+    # Start FL server in background thread
+    def start_fl_server():
+        try:
+            logger.info("Starting Flower server...")
+            fl.server.start_server(
+                server_address=f"{host}:{port}",
+                config=config,
+                strategy=strategy
+            )
+        except Exception as e:
+            logger.error(f"Flower server failed: {e}")
+
+    # Start FL server in background
+    fl_thread = threading.Thread(target=start_fl_server, daemon=True)
+    fl_thread.start()
+
+    # Give FL server time to start
+    import time
+    time.sleep(2)
+
+    # Run web interface on main thread (this keeps the service alive)
+    logger.info("Starting web interface...")
     try:
-        fl.server.start_server(
-            server_address=f"{host}:{port}",
-            config=config,
-            strategy=strategy
-        )
-    except Exception as e:
-        logger.error(f"Server failed to start: {e}")
-        # Fallback: just run the web interface
-        logger.info("Running in web-only mode...")
         web_app.run(host=host, port=port, debug=False)
+    except Exception as e:
+        logger.error(f"Web interface failed: {e}")
+        # Keep the process alive
+        while True:
+            time.sleep(60)
 
 if __name__ == "__main__":
     main()
