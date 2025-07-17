@@ -15,7 +15,7 @@ import flwr as fl
 from flwr.common import Metrics, FitRes, EvaluateRes
 from flwr.server.strategy import FedAvg
 from flwr.server.client_proxy import ClientProxy
-from flask import Flask, jsonify, render_template_string
+from flask import Flask, jsonify, render_template_string, request
 import threading
 
 # Add project root to path
@@ -212,6 +212,7 @@ def create_web_interface(strategy: RenderFedAvg, port: int) -> Flask:
 python client.py --hospital-id 0 --server-address {{ server_url }}
                     </div>
                     <p>Replace <code>--hospital-id</code> with 0, 1, or 2 for different hospitals.</p>
+                    <p><strong>Note:</strong> Make sure to use port 10000 for the federated learning server.</p>
                     
                     <h4>📋 Setup Instructions:</h4>
                     <ol>
@@ -238,7 +239,11 @@ python client.py --hospital-id 0 --server-address {{ server_url }}
         latest_metrics = metrics_history[-1] if metrics_history else None
         
         # Get server URL
-        server_url = request.host.replace(':5000', ':8080')  # Adjust for FL port
+        host = request.host
+        if ':' in host:
+            server_url = host.split(':')[0] + ':10000'  # Use Render's port
+        else:
+            server_url = host + ':10000'
         
         return render_template_string(
             html_template,
