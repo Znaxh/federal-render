@@ -1,0 +1,39 @@
+# Render deployment configuration
+services:
+  - type: web
+    name: federated-learning-server
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python server.py --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: FL_SERVER_HOST
+        value: 0.0.0.0
+      - key: FL_SERVER_PORT
+        fromService:
+          type: web
+          name: federated-learning-server
+          property: port
+      - key: FL_ROUNDS
+        value: "10"
+      - key: FL_MIN_CLIENTS
+        value: "2"
+      - key: FL_MIN_AVAILABLE_CLIENTS
+        value: "3"
+      - key: DP_EPSILON
+        value: "1.0"
+      - key: DP_DELTA
+        value: "1e-5"
+      - key: LOG_LEVEL
+        value: "INFO"
+    healthCheckPath: /health
+    autoDeploy: true
+    
+# Optional: Add a static site for documentation
+  - type: static
+    name: federated-learning-docs
+    buildCommand: echo "Building documentation..."
+    staticPublishPath: ./docs
+    envVars:
+      - key: NODE_VERSION
+        value: "18"

@@ -1,0 +1,21 @@
+services:
+- buildCommand: pip install -r render_requirements.txt
+  env: python
+  envVars:
+  - key: FL_ROUNDS
+    value: '10'
+  - key: FL_MIN_CLIENTS
+    value: '1'
+  - key: FL_MIN_AVAILABLE_CLIENTS
+    value: '1'
+  - key: DP_EPSILON
+    value: '1.0'
+  - key: DP_DELTA
+    value: 1e-5
+  - key: LOG_LEVEL
+    value: INFO
+  healthCheckPath: /health
+  name: federated-learning-server
+  plan: free
+  startCommand: python render_server.py
+  type: web
